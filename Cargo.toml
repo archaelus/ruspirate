@@ -1,0 +1,9 @@
+[package]
+name = "ruspirate"
+version = "0.1.0"
+authors = ["Geoff Cant <nem@erlang.geek.nz>"]
+
+[dependencies]
+serial = "0.4"
+serial_ports = { git = "https://github.com/dhylands/serial-ports-rs.git" }
+clap = "2.29"
