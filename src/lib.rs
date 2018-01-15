@@ -11,6 +11,7 @@ const BUSPIRATE_VID: u16 = 0x04D8;
 const BUSPIRATE_PID: u16 = 0xFB00;
 
 use std::path::PathBuf;
+use std::cmp::Ordering;
 
 #[derive(Debug, Clone)]
 pub struct Device {
@@ -65,6 +66,16 @@ impl Devices {
 
     pub fn len(&self) -> usize {
         self.0.len()
+    }
+
+    pub fn sort(&mut self) {
+        self.0.sort_by(|ref a, ref b| a.device.cmp(&b.device));
+    }
+
+    pub fn sort_by<F>(&mut self, compare: F)
+        where
+        F: FnMut(&Device, &Device) -> Ordering {
+        self.0.sort_by(compare)
     }
 }
 
