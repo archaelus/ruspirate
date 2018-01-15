@@ -8,7 +8,7 @@ const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 fn main() {
 
-    let matches = clap_app!(MyApp =>
+    let matches = clap_app!(Rpir8 =>
                             (@setting SubcommandRequiredElseHelp)
                             (version: VERSION)
                             (author: "Geoff Cant <geoff+rust@archant.us>")
