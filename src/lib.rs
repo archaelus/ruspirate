@@ -58,6 +58,7 @@ impl Devices {
         self.0.iter()
             .filter(|d| d.device.to_str()
                     .and_then(|dev| dev.find(pat))
+                    .or_else(|| d.hwid.find(pat))
                     .is_some())
             .next()
     }
