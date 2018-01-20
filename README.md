@@ -24,7 +24,7 @@ List attached bus pirates.
 
 The swiss army knife of rust-controlled buspirate activity.
 
-    $ cargo run --bin rpir8 
+    $ cargo run --bin rpir8
        Compiling ruspirate v0.1.0 (file:///....../rust/ruspirate)
         Finished dev [unoptimized + debuginfo] target(s) in 1.43 secs
          Running `target/debug/rpir8`
@@ -46,7 +46,17 @@ The swiss army knife of rust-controlled buspirate activity.
 
 List attached bus pirates:
 
-    $ cargo run --bin rpir8 -- list
+    $ cargo run --bin=rpir8 list
         Finished dev [unoptimized + debuginfo] target(s) in 0.0 secs
          Running `target/debug/rpir8 list`
-    (1) "/dev/cu.usbmodem00000001" (USB VID:PID=04D8:FB00 SER=00000001 LOCATION=20-1.2)
+    (1) "/dev/cu.usbmodem00000001" (USB VID:PID=04D8:FB00 SER=00000001 LOCATION=20-1.3.4.1)
+
+Test the default attached bus pirate:
+
+    $ cargo run --bin=rpir8 test
+       Compiling ruspirate v0.1.0 (file:///Users/nem/rust/ruspirate)
+        Finished dev [unoptimized + debuginfo] target(s) in 1.74 secs
+         Running `target/debug/rpir8 test`
+    Testing Device { device: "/dev/cu.usbmodem00000001", hwid: "USB VID:PID=04D8:FB00 SER=00000001 LOCATION=20-1.3.4.1" }
+    Yay! Opened Some("/dev/cu.usbmodem00000001") as BusPirate { port: 3 }
+    Good pirate (vsn One)!
