@@ -54,8 +54,13 @@ fn main() {
                 Some(pirate) => {
                     println!("Testing {:?}", pirate);
                     match pirate.open() {
-                        Ok(_port) => {
-                            println!("Yay! Opened {:?}", pirate.device.to_str())
+                        Ok(mut p) => {
+                            println!("Yay! Opened {:#?} as {:#?}",
+                                     pirate.device.to_str(), p);
+                            match p.test() {
+                                Err(e) => println!("Testing failed: {:#?}", e),
+                                Ok(vsn) => println!("Good pirate({:#?})!", vsn)
+                            }
                         },
                         Err(e) => {
                             println!("Couldn't open {:?}: {}",
