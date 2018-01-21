@@ -19,6 +19,10 @@ fn main() {
                              (about: "Test a buspirate")
                              (@arg dev: -d --dev +takes_value
                               "The bus pirate device to use."))
+                            (@subcommand vsn =>
+                             (about: "Interrogate the version of the buspirate")
+                             (@arg dev: -d --dev +takes_value
+                              "The bus pirate device to use."))
     ).get_matches();
 
     let pirates = Devices::detect();
@@ -71,7 +75,21 @@ fn main() {
                     }
                 }
             }
-        }
+        },
+        Some("vsn") => {
+            let device =
+                default_device(&pirates,
+                               matches.subcommand_matches("vsn")
+                               .unwrap().value_of("dev"))
+                .expect("Couldn't find a bus pirate device.");
+
+            device.open()
+                .expect("Couldn't open bus_pirate")
+                .read_vsn()
+                .and_then(|s| Ok(println!("{}:\n{}",
+                                          device.device.to_str().unwrap(), s)))
+                .expect("Couldn't get version string.");
+        },
         _ => {
             println!("Unknown subcommand.");
             std::process::exit(1);
@@ -79,4 +97,11 @@ fn main() {
     }
 
     std::process::exit(0);
+}
+
+use ruspirate::Device;
+fn default_device<'a>(devs: &'a Devices, dev: Option<&str>) ->
+    Option<&'a Device> {
+    dev.map_or_else(|| devs.default(),
+                    |pat| devs.find(pat))
 }

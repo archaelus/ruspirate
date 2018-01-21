@@ -9,13 +9,49 @@ pub struct BusPirate {
 }
 
 use std::io::{Read, Write, ErrorKind};
-use std::time::Duration;
+use std::time::{Instant, Duration};
 
 use super::bbio::{BBIOConn, BinModeVSN};
 
 impl BusPirate {
     pub fn new(port: SystemPort) -> Self {
         Self { port: port }
+    }
+
+    pub fn read_vsn(&mut self) -> Result<String> {
+        let original_timeout = self.port.timeout();
+        try!(self.port.set_timeout(Duration::from_millis(100)));
+        try!(write!(self.port, "\n\n\n\n\n\n\n\n\n\n#\n"));
+        let mut boot_str: String = String::new();
+        let start = Instant::now();
+        loop {
+            if start.elapsed() > Duration::from_secs(5) {
+                break;
+            }
+
+            let mut this_read: [u8; 1] = [0; 1];
+            match self.port.read_exact(&mut this_read) {
+                Ok(()) => {
+                    let s = String::from_utf8_lossy(&this_read);
+                    boot_str.push_str(&s);
+                }
+                Err(ref e) if e.kind() == ErrorKind::TimedOut => break,
+                Err(ref e) if e.kind() == ErrorKind::Interrupted => continue,
+                Err(e) => {
+                    try!(self.port.set_timeout(original_timeout));
+                    return Err(e.into())
+                }
+            }
+        }
+        try!(self.port.set_timeout(original_timeout));
+        // Clean up the output (remove response to state reset string,
+        // trailing prompt)
+        Ok(boot_str.split("\r\n")
+           .skip_while(|s| s != &"RESET")
+           .skip(1)
+           .filter(|s| ! s.starts_with("HiZ>"))
+           .collect::<Vec<&str>>()
+           .join("\n"))
     }
 
     pub fn enter_bio_mode(self) -> Result<BBIOConn> {
