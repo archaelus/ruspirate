@@ -1,4 +1,5 @@
 use serial::SystemPort;
+use std::str::FromStr;
 
 pub struct I2CConn {
     port: SystemPort,
@@ -173,17 +174,50 @@ pub enum Message {
     WriteThenRead(Vec<u8>, u8)
 }
 
+#[derive(Debug)]
 pub enum PullUp {
     V5,
     V3_3,
     None
 }
 
+impl FromStr for PullUp {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "5" => Ok(PullUp::V5),
+            "3.3" => Ok(PullUp::V3_3),
+            _     => Err("Invalid i2c bus voltage")
+        }
+    }
+}
+
+#[derive(Debug)]
 pub enum Speed {
     Hz400000 = 0b11,
     Hz100000 = 0b10,
     Hz50000 = 0b01,
     Hz5000 = 0b00
+}
+
+
+impl FromStr for Speed {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "400000" => Ok(Speed::Hz400000),
+            "100000" => Ok(Speed::Hz100000),
+            "50000" => Ok(Speed::Hz50000),
+            "5000" => Ok(Speed::Hz5000),
+            "400k" => Ok(Speed::Hz400000),
+            "100k" => Ok(Speed::Hz100000),
+            "50k" => Ok(Speed::Hz50000),
+            "5k" => Ok(Speed::Hz5000),
+            _     => Err("Invalid i2c bus speed")
+        }
+    }
 }
 
 use self::Message::*;

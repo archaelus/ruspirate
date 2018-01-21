@@ -4,6 +4,7 @@ extern crate clap;
 extern crate ruspirate;
 
 use ruspirate::{Devices};
+use ruspirate::i2c::{PullUp, Speed};
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 fn main() {
@@ -23,6 +24,21 @@ fn main() {
                              (about: "Interrogate the version of the buspirate")
                              (@arg dev: -d --dev +takes_value
                               "The bus pirate device to use."))
+                            (@subcommand i2c =>
+                             (about: "I2C commands")
+                             (@arg dev: -d --dev +takes_value
+                              "The bus pirate device to use.")
+                             (@arg voltage: -v --voltage
+                              +takes_value
+                              "The bus voltage to use. (5, 3.3, 0 if not specified)")
+                             (@arg speed: -s --speed
+                              +takes_value
+                              "The bus voltage to use. (5, 3.3, 0 if not specified)")
+                             (@arg dryrun: -r --("dry-run")
+                              "Don't actually execute the command.")
+                             (@subcommand scan =>
+                              (about: "Scan the i2c bus for r/w addresses"))
+                            )
     ).get_matches();
 
     let pirates = Devices::detect();
@@ -89,6 +105,27 @@ fn main() {
                 .and_then(|s| Ok(println!("{}:\n{}",
                                           device.device.to_str().unwrap(), s)))
                 .expect("Couldn't get version string.");
+        },
+        Some("i2c") => {
+            let i2c_matches = matches.subcommand_matches("i2c").unwrap();
+            let dev = default_device(&pirates, i2c_matches.value_of("dev"));
+            let voltage = value_t!(i2c_matches, "voltage", PullUp);
+            let speed = value_t!(i2c_matches, "speed", Speed);
+            let dryrun: bool = value_t!(i2c_matches, "dryrun", bool)
+                .unwrap_or(true);
+            println!("I2C: dev: {:?} voltage: {:?} speed: {:?} dryrun: {:?}",
+                     dev, voltage, speed, dryrun);
+
+            match i2c_matches.subcommand_name() {
+                Some("scan") => {},
+                Some(ref c) => {
+                    println!("Unknown i2c command: {}", c);
+                    std::process::exit(1);
+                }
+                None => {
+                    println!("I2C: no i2c command to run.");
+                }
+            }
         },
         _ => {
             println!("Unknown subcommand.");

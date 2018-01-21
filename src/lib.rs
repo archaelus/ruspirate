@@ -4,10 +4,8 @@ extern crate serial;
 
 mod device;
 mod pirate;
-mod i2c;
-mod bbio;
+pub mod i2c;
+pub mod bbio;
 
 pub use pirate::BusPirate;
 pub use device::{Device, Devices};
-pub use bbio::BBIOConn;
-pub use i2c::I2CConn;
