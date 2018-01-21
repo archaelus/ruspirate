@@ -57,10 +57,10 @@ fn main() {
                         Ok(mut p) => {
                             println!("Yay! Opened {:?} as {:#?}",
                                      pirate.device.to_str(), p);
-                            match p.test() {
+                            match p.enter_bio_mode() {
                                 Err(e) => println!("Testing failed: {:#?}", e),
-                                Ok(vsn) => println!("Good pirate (vsn {:#?})!",
-                                                    vsn)
+                                Ok(c) => println!("Good bbio con {:?}!",
+                                                  c.vsn)
                             }
                         },
                         Err(e) => {
