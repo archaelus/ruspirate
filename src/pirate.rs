@@ -1,30 +1,24 @@
 use serial::{SerialPort, SystemPort, Error};
-use serial::core::Result as SerialResult;
+use serial::core::Result;
 use serial;
 
-#[derive(Debug)]
-pub enum BinModeVSN {
-    One
-}
 const BBIO_RESP_V1: [u8; 5] = [b'B', b'B', b'I', b'O', b'1'];
 
 pub struct BusPirate {
     port: SystemPort
 }
 
-pub struct BBIOConn {
-    port: SystemPort,
-    pub vsn: BinModeVSN
-}
-
 use std::io::{Read, Write, ErrorKind};
 use std::time::Duration;
+
+use super::bbio::{BBIOConn, BinModeVSN};
+
 impl BusPirate {
     pub fn new(port: SystemPort) -> Self {
         Self { port: port }
     }
 
-    pub fn enter_bio_mode(self) -> SerialResult<BBIOConn> {
+    pub fn enter_bio_mode(self) -> Result<BBIOConn> {
         let mut port = self.port;
         // Try to escape any prompt we're at.
         try!(write!(port, "\n\n\n\n\n\n\n\n\n\n#\n"));
@@ -52,8 +46,7 @@ impl BusPirate {
                 Ok(()) => {
                     if vsn_vec == BBIO_RESP_V1 {
                         try!(port.set_timeout(original_timeout));
-                        return Ok(BBIOConn { port: port,
-                                             vsn: BinModeVSN::One })
+                        return Ok(BBIOConn::new(port, BinModeVSN::One))
                     }
                     try!(port.set_timeout(original_timeout));
                     return Err(Error::new(serial::ErrorKind::InvalidInput,

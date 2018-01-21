@@ -4,6 +4,8 @@ extern crate serial;
 
 mod device;
 mod pirate;
+mod bbio;
 
 pub use pirate::BusPirate;
 pub use device::{Device, Devices};
+pub use bbio::BBIOConn;
