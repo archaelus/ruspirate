@@ -61,10 +61,7 @@ fn main() {
         Some("test") => {
             let test = matches.subcommand_matches("test").unwrap();
 
-            let device = match test.value_of("dev") {
-                None => pirates.default(),
-                Some(pat) => pirates.find(pat)
-            };
+            let device = pirates.find_or_default(test.value_of("dev"));
 
             match device {
                 None => {
@@ -94,9 +91,8 @@ fn main() {
         },
         Some("vsn") => {
             let device =
-                default_device(&pirates,
-                               matches.subcommand_matches("vsn")
-                               .unwrap().value_of("dev"))
+                pirates.find_or_default(matches.subcommand_matches("vsn")
+                                        .unwrap().value_of("dev"))
                 .expect("Couldn't find a bus pirate device.");
 
             device.open()
@@ -108,7 +104,7 @@ fn main() {
         },
         Some("i2c") => {
             let i2c_matches = matches.subcommand_matches("i2c").unwrap();
-            let dev = default_device(&pirates, i2c_matches.value_of("dev"));
+            let dev = pirates.find_or_default(i2c_matches.value_of("dev"));
             let voltage = value_t!(i2c_matches, "voltage", PullUp);
             let speed = value_t!(i2c_matches, "speed", Speed);
             let dryrun: bool = value_t!(i2c_matches, "dryrun", bool)
@@ -134,11 +130,4 @@ fn main() {
     }
 
     std::process::exit(0);
-}
-
-use ruspirate::Device;
-fn default_device<'a>(devs: &'a Devices, dev: Option<&str>) ->
-    Option<&'a Device> {
-    dev.map_or_else(|| devs.default(),
-                    |pat| devs.find(pat))
 }

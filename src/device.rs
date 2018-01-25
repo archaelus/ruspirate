@@ -53,6 +53,11 @@ impl Devices {
         self.0.first()
     }
 
+    pub fn find_or_default(&self, pat: Option<&str>) -> Option<&Device> {
+        pat.map_or_else(|| self.default(),
+                        |pat| self.find(pat))
+    }
+
     pub fn find(&self, pat: &str) -> Option<&Device> {
         self.0.iter()
             .filter(|d| d.device.to_str()
