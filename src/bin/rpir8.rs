@@ -4,7 +4,7 @@ extern crate clap;
 extern crate ruspirate;
 
 use ruspirate::{Devices};
-use ruspirate::i2c::{PullUp, Speed};
+use ruspirate::i2c::{PullUp, Speed, BusSettings};
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 fn main() {
@@ -33,7 +33,7 @@ fn main() {
                               "The bus voltage to use. (5, 3.3, 0 if not specified)")
                              (@arg speed: -s --speed
                               +takes_value
-                              "The bus voltage to use. (5, 3.3, 0 if not specified)")
+                              "The bus speed to use (in Hz). (400k, 100k, 50k, 5k)")
                              (@arg dryrun: -r --("dry-run")
                               "Don't actually execute the command.")
                              (@subcommand scan =>
@@ -108,7 +108,8 @@ fn main() {
             let i2c_matches = matches.subcommand_matches("i2c").unwrap();
             let dev = pirates.find_or_default(i2c_matches.value_of("dev"));
             let voltage = value_t!(i2c_matches, "voltage", PullUp);
-            let speed = value_t!(i2c_matches, "speed", Speed);
+            let speed = value_t!(i2c_matches, "speed", Speed)
+                .unwrap_or(Speed::Hz100000);
             let dryrun: bool = value_t!(i2c_matches, "dryrun", bool)
                 .unwrap_or(true);
             println!("I2C: dev: {:?} voltage: {:?} speed: {:?} dryrun: {:?}",
@@ -117,16 +118,19 @@ fn main() {
             match i2c_matches.subcommand_name() {
                 Some("scan") => {},
                 Some("test") => {
-                    dev.expect("Couldn't find a bus_pirate")
+                    let mut i2c = dev.expect("Couldn't find a bus_pirate")
                         .open()
                         .expect("Couldn't open bus_pirate")
                         .enter_bio_mode()
                         .expect("Couldn't enter binary IO mode")
                         .enter_i2c_mode()
-                        .expect("Couldn't enter binary I2C mode")
-                        .test()
-                        .expect("Failed to get I2C vsn.");
+                        .expect("Couldn't enter binary I2C mode");
 
+                    i2c.configure(&BusSettings::new(speed, !dryrun, false, false))
+                        .expect("Couldn't configure the I2C bus");
+                    println!("Configured! Yay!");
+                    i2c.test()
+                        .expect("Failed to get I2C vsn.");
                     println!("I guess that worked! Yay!");
                 }
                 Some(ref c) => {

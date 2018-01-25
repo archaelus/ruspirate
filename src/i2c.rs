@@ -21,6 +21,16 @@ pub struct BusSettings {
     cs: bool
 }
 
+impl BusSettings {
+    pub fn new(speed: Speed, power: bool, aux: bool, cs: bool) -> Self {
+        Self { speed: speed,
+               voltage: None,
+               power: power,
+               aux: aux,
+               cs: cs }
+    }
+}
+
 #[derive(Debug, Fail)]
 enum CallError {
     #[fail(display="expected {:?}, received {:?}", expected, received)]
@@ -52,6 +62,15 @@ impl I2CConn {
             Err(CallError::InvalidReply{ expected: good_reply,
                                          received: reply })?
         }
+    }
+
+    pub fn configure(&mut self, settings: &BusSettings) -> Result<(), Error> {
+        self.call(&Message::SetSpeed(settings.speed))?;
+        self.call(&Message::Configure(settings.power,
+                                      settings.voltage.is_some(),
+                                      settings.aux,
+                                      settings.cs))?;
+        Ok(())
     }
 }
 
