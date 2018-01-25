@@ -38,6 +38,8 @@ fn main() {
                               "Don't actually execute the command.")
                              (@subcommand scan =>
                               (about: "Scan the i2c bus for r/w addresses"))
+                             (@subcommand test =>
+                              (about: "Test setting up binary i2c mode"))
                             )
     ).get_matches();
 
@@ -114,6 +116,19 @@ fn main() {
 
             match i2c_matches.subcommand_name() {
                 Some("scan") => {},
+                Some("test") => {
+                    dev.expect("Couldn't find a bus_pirate")
+                        .open()
+                        .expect("Couldn't open bus_pirate")
+                        .enter_bio_mode()
+                        .expect("Couldn't enter binary IO mode")
+                        .enter_i2c_mode()
+                        .expect("Couldn't enter binary I2C mode")
+                        .test()
+                        .expect("Failed to get I2C vsn.");
+
+                    println!("I guess that worked! Yay!");
+                }
                 Some(ref c) => {
                     println!("Unknown i2c command: {}", c);
                     std::process::exit(1);

@@ -1,13 +1,57 @@
 use serial::SystemPort;
+use serial;
 use std::str::FromStr;
+use std::result::Result;
+use std::io::{Read, Write};
+use std::iter;
+
+use failure::Error;
 
 pub struct I2CConn {
     port: SystemPort,
 }
 
+pub type Addr = u8;
+
+pub struct BusSettings {
+    speed: Speed,
+    voltage: Option<PullUp>,
+    power: bool,
+    aux: bool,
+    cs: bool
+}
+
+#[derive(Debug, Fail)]
+enum CallError {
+    #[fail(display="expected {:?}, received {:?}", expected, received)]
+    InvalidReply { expected: Vec<u8>, received: Vec<u8> },
+    #[fail(display="{}", _0)]
+    Serial(#[cause] serial::Error)
+}
+
 impl I2CConn {
     pub fn new(port: SystemPort) -> Self {
         Self { port: port }
+    }
+
+    pub fn test(&mut self) -> Result<(), Error> {
+        self.call(&Message::I2CVSN)?;
+        Ok(())
+    }
+
+    fn call(&mut self, msg: &Message) -> Result<Vec<u8>, Error> {
+        try!(self.port.write_all(&msg.send()));
+        let good_reply = msg.expect().expect("Couldn't encode message");
+        let mut reply = iter::repeat::<u8>(0)
+            .take(good_reply.len()).collect::<Vec<u8>>();
+
+        try!(self.port.read_exact(&mut reply));
+        if reply.eq(&good_reply) {
+            Ok(reply)
+        } else {
+            Err(CallError::InvalidReply{ expected: good_reply,
+                                         received: reply })?
+        }
     }
 }
 
@@ -174,11 +218,11 @@ pub enum Message {
     WriteThenRead(Vec<u8>, u8)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum PullUp {
-    V5,
-    V3_3,
-    None
+    V5   = 0b10,
+    V3_3 = 0b01,
+    None = 0b00
 }
 
 impl FromStr for PullUp {
@@ -188,17 +232,18 @@ impl FromStr for PullUp {
         match s {
             "5" => Ok(PullUp::V5),
             "3.3" => Ok(PullUp::V3_3),
+            "3_3" => Ok(PullUp::V3_3),
             _     => Err("Invalid i2c bus voltage")
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum Speed {
     Hz400000 = 0b11,
     Hz100000 = 0b10,
-    Hz50000 = 0b01,
-    Hz5000 = 0b00
+    Hz50000  = 0b01,
+    Hz5000   = 0b00
 }
 
 
@@ -209,13 +254,13 @@ impl FromStr for Speed {
         match s {
             "400000" => Ok(Speed::Hz400000),
             "100000" => Ok(Speed::Hz100000),
-            "50000" => Ok(Speed::Hz50000),
-            "5000" => Ok(Speed::Hz5000),
-            "400k" => Ok(Speed::Hz400000),
-            "100k" => Ok(Speed::Hz100000),
-            "50k" => Ok(Speed::Hz50000),
-            "5k" => Ok(Speed::Hz5000),
-            _     => Err("Invalid i2c bus speed")
+            "50000"  => Ok(Speed::Hz50000),
+            "5000"   => Ok(Speed::Hz5000),
+            "400k"   => Ok(Speed::Hz400000),
+            "100k"   => Ok(Speed::Hz100000),
+            "50k"    => Ok(Speed::Hz50000),
+            "5k"     => Ok(Speed::Hz5000),
+            _        => Err("Invalid i2c bus speed")
         }
     }
 }
@@ -241,20 +286,37 @@ impl Message {
                 buf.extend(bytes);
                 buf
             },
+            Configure(power, pullups, aux, cs) => {
+                let mut cmd = 0b0100_0000;
+                if power { cmd &= 0b1000; }
+                if pullups { cmd &= 0b0100; }
+                if aux { cmd &= 0b0010; }
+                if cs {cmd &= 0b0001; }
+                vec![cmd]
+            },
+            PullUpSelect(pullup) => {
+                vec![0b0101_0000 | pullup as u8]
+            },
+            SetSpeed(speed) => {
+                vec![0b0110_0000 | speed as u8]
+            },
             _ => unimplemented!()
         }
     }
 
-    pub fn expect(&self) -> Vec<u8> {
+    pub fn expect(&self) -> Option<Vec<u8>> {
         match *self {
-            ExitToBBIO  => vec![b'B', b'B', b'I', b'O', b'1'],
-            I2CVSN  => vec![b'I', b'2', b'C', b'1'],
-            StartBit => vec![0b00000001],
-            StopBit => vec![0b00000001],
-            AckBit => vec![0b00000001],
-            NackBit => vec![0b00000001],
-            ExitBusSniffer => vec![0b00000001],
-            _ => unimplemented!()
+            ExitToBBIO  => Some(vec![b'B', b'B', b'I', b'O', b'1']),
+            I2CVSN  => Some(vec![b'I', b'2', b'C', b'1']),
+            StartBit => Some(vec![0b00000001]),
+            StopBit => Some(vec![0b00000001]),
+            AckBit => Some(vec![0b00000001]),
+            NackBit => Some(vec![0b00000001]),
+            ExitBusSniffer => Some(vec![0b00000001]),
+            Configure(_,_,_,_) => Some(vec![0b00000001]),
+            PullUpSelect(_) => Some(vec![0b00000001]),
+            SetSpeed(_) => Some(vec![0b00000001]),
+            _ => None
         }
     }
 }

@@ -7,3 +7,4 @@ authors = ["Geoff Cant <nem@erlang.geek.nz>"]
 serial = "0.4"
 serial_ports = { git = "https://github.com/dhylands/serial-ports-rs.git" }
 clap = "2.29"
+failure = "0.1"
