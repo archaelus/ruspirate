@@ -313,10 +313,10 @@ impl Message {
             },
             Configure(power, pullups, aux, cs) => {
                 let mut cmd = 0b0100_0000;
-                if power { cmd &= 0b1000; }
-                if pullups { cmd &= 0b0100; }
-                if aux { cmd &= 0b0010; }
-                if cs {cmd &= 0b0001; }
+                if power { cmd |= 0b1000; }
+                if pullups { cmd |= 0b0100; }
+                if aux { cmd |= 0b0010; }
+                if cs {cmd |= 0b0001; }
                 vec![cmd]
             },
             PullUpSelect(pullup) => {
