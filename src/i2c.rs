@@ -71,6 +71,12 @@ impl I2CConn {
                                       settings.cs))?;
         Ok(())
     }
+
+impl Drop for I2CConn {
+    fn drop(&mut self) {
+        let _ = self.call(&Message::Configure(false,false,false,false));
+        let _ = self.call(&Message::ExitToBBIO);
+    }
 }
 
 // 00000000 - Exit to bitbang mode, responds "BBIOx"
