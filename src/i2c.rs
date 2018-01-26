@@ -225,6 +225,7 @@ impl Drop for I2CConn {
 // 0x?? - read position 256 - the requested number of bytes read from
 // the I2C bus
 
+#[derive(Debug, Clone)]
 pub enum Message {
     ExitToBBIO,
     I2CVSN,
