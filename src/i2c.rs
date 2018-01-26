@@ -1,5 +1,4 @@
 use serial::SystemPort;
-use serial;
 use std::str::FromStr;
 use std::result::Result;
 use std::io::{Read, Write};
@@ -33,10 +32,9 @@ impl BusSettings {
 
 #[derive(Debug, Fail)]
 enum CallError {
-    #[fail(display="expected {:?}, received {:?}", expected, received)]
-    InvalidReply { expected: Vec<u8>, received: Vec<u8> },
-    #[fail(display="{}", _0)]
-    Serial(#[cause] serial::Error)
+    #[fail(display="sent: {:?} expected {:?}, received {:?}",
+           sent, expected, received)]
+    InvalidReply { sent: Message, expected: Vec<u8>, received: Vec<u8> }
 }
 
 impl I2CConn {
@@ -59,7 +57,8 @@ impl I2CConn {
         if reply.eq(&good_reply) {
             Ok(reply)
         } else {
-            Err(CallError::InvalidReply{ expected: good_reply,
+            Err(CallError::InvalidReply{ sent: msg.clone(),
+                                         expected: good_reply,
                                          received: reply })?
         }
     }
